@@ -1,30 +1,22 @@
 ```
-# Compiled and build artifacts
-*.pyc
+# Dependencies
+node_modules/
+.venv/
+venv/
 __pycache__/
-*.o
-*.obj
+*.pyc
+*.pyo
+*.pyd
+
+# Build artifacts
 dist/
 build/
 target/
 
-# Dependencies
-.venv/
-venv/
-node_modules/
-.julia/
-.zig-cache/
-
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-*.swo
-
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
 
 # Editors
 .vscode/
@@ -32,54 +24,24 @@ node_modules/
 *.swp
 *.swo
 
-# System files
-.DS_Store
-Thumbs.db
+# Logs
+*.log
 
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# Python specific
-*.pyc
+# Python
 __pycache__/
-.mypy_cache/
-.pytest_cache/
+*.py[cod]
+*$py.class
+*.so
+.Python
+install_manifest.txt
+setup.py
 
-# Node.js specific
-node_modules/
+# Frontend build
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Build outputs
-dist/
-build/
-*.min.js
-*.min.css
-
-# Compression files
-*.zip
-*.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
+# OS
+.DS_Store
+Thumbs.db
 ```
