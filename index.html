@@ -4,8 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Heap Master Pro: نسخه حرفه‌ای</title>
+    
+    <!-- PyScript for running Python in the browser -->
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/pyscript.css" />
+    <script defer src="https://pyscript.net/releases/2024.1.1/pyscript.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -365,6 +371,36 @@
             background: rgba(0,0,0,0.7); color: white; padding: 5px 10px;
             border-radius: 6px; font-family: monospace; font-size: 0.8rem;
             display: none;
+        }
+        
+        /* PyScript loading indicator */
+        .pyscript-loading {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--bg-panel);
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            padding: 15px 20px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .pyscript-loading.hidden {
+            display: none;
+        }
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -1988,6 +2024,145 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial debug info
     document.getElementById('debugInfo').textContent = '3D engine ready';
 });
+</script>
+
+<!-- PyScript Loading Indicator -->
+<div id="pyscriptLoading" class="pyscript-loading">
+    <div class="spinner"></div>
+    <span>در حال بارگذاری موتور پایتون...</span>
+</div>
+
+<!-- PyScript Python Code -->
+<py-script>
+import js
+import json
+from pyodide.ffi import create_proxy
+from metallurgy_engine import HeapLeachCalculator
+
+# Initialize calculator
+calculator = HeapLeachCalculator()
+
+def run_recovery_calculation(flow_rate, acid_conc, time_days, ore_grade, particle_size=0.025):
+    """Calculate copper recovery"""
+    recovery = calculator.calculate_recovery(flow_rate, acid_conc, time_days, ore_grade, particle_size)
+    return round(recovery, 2)
+
+def run_opex_calculation(tonnage, days, acid_price=300, labor_cost=5000, diesel_price=1.5):
+    """Calculate OPEX"""
+    opex = calculator.calculate_opex(tonnage, days, acid_price, labor_cost, diesel_price)
+    return opex
+
+def run_pls_calculation(flow_rate, area, recovery, ore_grade, tonnage):
+    """Calculate PLS properties"""
+    pls = calculator.calculate_pls(flow_rate, area, recovery, ore_grade, tonnage)
+    return pls
+
+def run_production_schedule(target_cathode, ore_grade, recovery, days=365):
+    """Calculate production schedule"""
+    schedule = calculator.production_schedule(target_cathode, ore_grade, recovery, days)
+    return schedule
+
+def run_volume_calculation(L, W, H_top, H_bottom, slope_deg, terrain_slope_x=0, terrain_slope_y=0):
+    """Calculate pad volume"""
+    volume = calculator.pad_volume_calculation(L, W, H_top, H_bottom, slope_deg, terrain_slope_x, terrain_slope_y)
+    return volume
+
+def run_acid_optimization(pls_flow, cu_conc, target_ph, current_ph):
+    """Optimize acid addition"""
+    optimization = calculator.optimize_acid_addition(pls_flow, cu_conc, target_ph, current_ph)
+    return optimization
+
+# Hide loading indicator when ready
+js.document.getElementById('pyscriptLoading').classList.add('hidden')
+print("Python engine loaded successfully!")
+</py-script>
+
+<script>
+// JavaScript-Python Integration
+const PythonEngine = {
+    async callRecovery(flowRate, acidConc, timeDays, oreGrade, particleSize = 0.025) {
+        try {
+            if (typeof pyscript !== 'undefined') {
+                const result = await pyscript.runPythonAsync(`
+                    calculator.calculate_recovery(${flowRate}, ${acidConc}, ${timeDays}, ${oreGrade}, ${particleSize})
+                `);
+                return result;
+            }
+            // Fallback to JS calculation
+            return this.jsCalculateRecovery(flowRate, acidConc, timeDays, oreGrade, particleSize);
+        } catch (e) {
+            console.error('Python error:', e);
+            return this.jsCalculateRecovery(flowRate, acidConc, timeDays, oreGrade, particleSize);
+        }
+    },
+    
+    jsCalculateRecovery(flowRate, acidConc, timeDays, oreGrade, particleSize = 0.025) {
+        const baseRecovery = 85;
+        const flowNorm = Math.log(flowRate / 50 + 1);
+        const acidNorm = Math.log(acidConc / 10 + 1);
+        const timeNorm = Math.sqrt(timeDays / 30);
+        const gradeFactor = 1.0 - 0.02 * (oreGrade - 0.7);
+        const sizeFactor = 1.0 - 2.0 * (particleSize - 0.025);
+        
+        let recovery = (
+            baseRecovery +
+            8.5 * flowNorm +
+            6.2 * acidNorm +
+            12.0 * timeNorm -
+            0.15 * Math.pow(timeNorm, 2) +
+            3.0 * gradeFactor +
+            2.5 * sizeFactor
+        );
+        
+        return Math.max(70, Math.min(95, recovery));
+    },
+    
+    async calculateAll(params) {
+        const recovery = await this.callRecovery(
+            params.flowRate || 80,
+            params.acidConc || 15,
+            params.timeDays || 90,
+            params.oreGrade || 0.7,
+            params.particleSize || 0.025
+        );
+        
+        const tonnage = params.tonnage || 1000000;
+        const days = params.days || 365;
+        
+        // OPEX calculation (JS fallback)
+        const acidConsumption = tonnage * 5.0;
+        const acidCost = (acidConsumption / 1000) * 300;
+        const laborMonths = days / 30;
+        const laborTotal = 5000 * laborMonths;
+        const dieselConsumption = tonnage * 0.3;
+        const dieselCost = dieselConsumption * 1.5;
+        const overhead = (acidCost + laborTotal + dieselCost) * 0.15;
+        const totalOpex = acidCost + laborTotal + dieselCost + overhead;
+        
+        // PLS calculation
+        const area = params.area || 20000;
+        const totalFlow = (params.flowRate || 80) * area * 24 / 1000;
+        const copperDissolved = tonnage * (params.oreGrade || 0.7) / 100 * recovery / 100 / 365;
+        const cuConcentration = (copperDissolved * 1000) / (totalFlow * 1000);
+        
+        return {
+            recovery: recovery.toFixed(2),
+            opex: {
+                totalOpexUsd: totalOpex.toFixed(2),
+                opexPerTon: (totalOpex / tonnage).toFixed(2),
+                acidCostUsd: acidCost.toFixed(2),
+                laborCostUsd: laborTotal.toFixed(2),
+                dieselCostUsd: dieselCost.toFixed(2)
+            },
+            pls: {
+                totalFlowM3Day: totalFlow.toFixed(2),
+                copperDissolvedKgYear: (copperDissolved * 365).toFixed(2),
+                cuConcentrationGL: cuConcentration.toFixed(3),
+                annualCathodeTonnes: (copperDissolved * 365 / 1000).toFixed(2)
+            }
+        };
+    }
+};
 </script>
 </body>
 </html>
